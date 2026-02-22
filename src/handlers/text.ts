@@ -20,6 +20,7 @@ export async function handleTextMessage(
   const text = ctx.message?.text;
   if (!text) return;
 
+  const chatId = ctx.chat?.id || 0;
   const wantsVoice = text.toLowerCase().includes(VOICE_TRIGGER);
   const cleanedText = wantsVoice
     ? text.toLowerCase().replace(VOICE_TRIGGER, "").trim() || text
@@ -29,7 +30,7 @@ export async function handleTextMessage(
   await ctx.replyWithChatAction("typing");
 
   try {
-    const reply = await runAgentLoop(cleanedText, config, memory);
+    const reply = await runAgentLoop(cleanedText, config, memory, { chatId });
 
     if (wantsVoice) {
       if (!config.TTS_API_KEY && !config.MOCK_TTS) {
@@ -54,8 +55,13 @@ export async function handleTextMessage(
     } else {
       await ctx.reply(reply);
     }
-  } catch (error) {
-    console.error("Metin handler hatası:", error);
+  } catch (error: any) {
+    console.error("═══════════════════════════════════");
+    console.error("❌ Metin handler hatası:");
+    console.error("  Mesaj:", error?.message || String(error));
+    console.error("  Stack:", error?.stack || "N/A");
+    console.error("  Kullanıcı mesajı:", text);
+    console.error("═══════════════════════════════════");
     await ctx.reply("❌ Bir hata oluştu, lütfen tekrar deneyin.");
   }
 }

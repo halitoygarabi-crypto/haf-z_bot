@@ -28,7 +28,7 @@ export async function handleVoiceMessage(
     const transcription = await transcribe(voicePath, config);
     await ctx.reply(`🎤 Transkripsiyon:\n${transcription}`);
     await ctx.replyWithChatAction("typing");
-    const reply = await runAgentLoop(transcription, config, memory);
+    const reply = await runAgentLoop(transcription, config, memory, { chatId: ctx.chat?.id || 0 });
     await ctx.reply(reply);
   } catch (error) {
     console.error("Ses handler hatası:", error);

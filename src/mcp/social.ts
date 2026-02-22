@@ -1,4 +1,5 @@
 import { sanitizeForLog } from "./guard.js";
+import { debugLog } from "../utils/logger.js";
 
 interface SocialAccount {
   platform: "tiktok" | "instagram" | "linkedin" | "facebook" | "x" | "reddit" | "threads" | "pinterest" | "youtube";
@@ -7,7 +8,7 @@ interface SocialAccount {
 
 interface LimeSocialPostParams {
   title: string;
-  mediaUrl?: string; // Opsiyonel: Sadece metin paylaşımı için
+  mediaUrl?: string;
   accounts: SocialAccount[];
 }
 
@@ -19,13 +20,25 @@ export async function postToSocialMedia(
   params: LimeSocialPostParams,
   apiKey: string
 ): Promise<any> {
-  const url = "https://api.limesocial.io/api/v1/post";
+  const url = "https://api.limesocial.io/v1/post";
 
   try {
-    console.log(sanitizeForLog("SOCIAL_POSTING", { 
-      platforms: params.accounts.map(a => a.platform),
-      hasMedia: !!params.mediaUrl 
-    }));
+    debugLog("═══ LIME SOCIAL API ÇAĞRISI ═══");
+    debugLog("  URL:", url);
+    debugLog("  Platforms:", params.accounts.map(a => `${a.platform}:${a.username}`).join(", "));
+    debugLog("  Title:", params.title.substring(0, 50));
+    debugLog("  Has Media:", !!params.mediaUrl);
+    if (params.mediaUrl) {
+      debugLog("  Media URL:", params.mediaUrl.substring(0, 80));
+    }
+
+    const requestBody = {
+      title: params.title,
+      mediaUrl: params.mediaUrl,
+      accounts: params.accounts,
+    };
+
+    debugLog("  Request Body:", JSON.stringify(requestBody, null, 2));
 
     const response = await fetch(url, {
       method: "POST",
@@ -33,18 +46,30 @@ export async function postToSocialMedia(
         "Content-Type": "application/json",
         "Authorization": apiKey
       },
-      body: JSON.stringify(params)
+      body: JSON.stringify(requestBody)
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    debugLog("  Response Status:", response.status);
+    debugLog("  Response Body:", responseText.substring(0, 500));
+    debugLog("═══════════════════════════════");
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      data = { raw: responseText };
+    }
 
     if (!response.ok) {
-      throw new Error(`Social API Hatası (${response.status}): ${JSON.stringify(data)}`);
+      throw new Error(`Social API Hatası (${response.status}): ${responseText}`);
     }
 
     return data;
   } catch (error) {
-    console.error(sanitizeForLog("SOCIAL_POST_ERROR", { error: String(error) }));
+    debugLog("═══ LIME SOCIAL HATA ═══");
+    debugLog("  Error:", String(error));
+    debugLog("════════════════════════");
     throw error;
   }
 }

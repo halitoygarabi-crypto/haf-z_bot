@@ -8,3 +8,7 @@ dist/
 tmp/
 memory/
 credentials/
+*.log
+debug.log
+hafiz-debug.log
+error-log.txt

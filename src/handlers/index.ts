@@ -1,6 +1,7 @@
 import { Bot } from "grammy";
 import { handleTextMessage } from "./text.js";
 import { handleVoiceMessage } from "./voice.js";
+import { handlePhotoMessage } from "./photo.js";
 import { triggerHeartbeatTest } from "../heartbeat/index.js";
 import type { EnvConfig } from "../config/env.js";
 import type { MemoryManager } from "../memory/index.js";
@@ -47,9 +48,12 @@ export function registerHandlers(
     await triggerHeartbeatTest(bot, config.TELEGRAM_ALLOWLIST_USER_ID);
   });
 
-  // Sesli mesaj handler
+  // 📸 Fotoğraf handler — vision desteği
+  bot.on("message:photo", (ctx) => handlePhotoMessage(ctx, config, memory));
+
+  // 🎤 Sesli mesaj handler
   bot.on("message:voice", (ctx) => handleVoiceMessage(ctx, config, memory));
 
-  // Metin mesaj handler (komutlardan sonra kayıt edilmeli)
+  // 💬 Metin mesaj handler (komutlardan sonra kayıt edilmeli)
   bot.on("message:text", (ctx) => handleTextMessage(ctx, config, memory));
 }

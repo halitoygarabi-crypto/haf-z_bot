@@ -1,10 +1,14 @@
 import { loadConfig, logConfigStatus } from "./config/env.js";
+import { clearDebugLog } from "./utils/logger.js";
 import { createBot } from "./telegram/bot.js";
 import { registerHandlers } from "./handlers/index.js";
 import { MemoryManager } from "./memory/index.js";
 import { startHeartbeat, stopHeartbeat } from "./heartbeat/index.js";
 
 async function main(): Promise<void> {
+  // 0. Debug log temizle
+  clearDebugLog();
+
   // 1. Konfigürasyon yükle ve doğrula
   const config = loadConfig();
   logConfigStatus(config);
