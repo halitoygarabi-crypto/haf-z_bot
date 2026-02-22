@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.ogg
+*.oga
+*.mp3
+*.wav
+tmp/
+memory/
+credentials/

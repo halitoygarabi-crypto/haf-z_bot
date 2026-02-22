@@ -1,0 +1,32 @@
+{
+  "name": "agent-claw",
+  "version": "1.0.0",
+  "description": "Agent Claw — Telegram AI asistan botu",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test:memory": "tsx scripts/test-memory.ts"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "grammy": "^1.31.0",
+    "@anthropic-ai/sdk": "^0.39.0",
+    "openai": "^4.77.0",
+    "dotenv": "^16.4.7",
+    "better-sqlite3": "^11.7.0",
+    "googleapis": "^144.0.0",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.10.0",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node-cron": "^3.0.11"
+  }
+}
