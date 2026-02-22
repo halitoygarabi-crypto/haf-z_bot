@@ -14,19 +14,20 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "grammy": "^1.31.0",
     "@anthropic-ai/sdk": "^0.39.0",
-    "openai": "^4.77.0",
-    "dotenv": "^16.4.7",
     "better-sqlite3": "^11.7.0",
+    "dotenv": "^16.4.7",
     "googleapis": "^144.0.0",
-    "node-cron": "^3.0.3"
+    "grammy": "^1.31.0",
+    "node-cron": "^3.0.3",
+    "openai": "^4.77.0",
+    "replicate": "^1.4.0"
   },
   "devDependencies": {
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0",
-    "@types/node": "^22.10.0",
     "@types/better-sqlite3": "^7.6.12",
-    "@types/node-cron": "^3.0.11"
+    "@types/node": "^22.10.0",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
   }
 }

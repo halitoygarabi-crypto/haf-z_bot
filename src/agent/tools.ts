@@ -2,6 +2,8 @@ import type { MemoryManager } from "../memory/index.js";
 import type { EnvConfig } from "../config/env.js";
 import { isToolAllowed, sanitizeForLog } from "../mcp/guard.js";
 import { getEventsForDate, formatEventsAsText } from "../mcp/calendar.js";
+import { generateFluxImage } from "../mcp/image.js";
+import { postToSocialMedia } from "../mcp/social.js";
 
 /**
  * Tool tanımları — Claude'un kullanabileceği araçlar.
@@ -72,6 +74,55 @@ export const toolDefinitions = [
       required: ["date"],
     },
   },
+  {
+    name: "generate_image" as const,
+    description:
+      "Yapay zeka (Flux.1) kullanarak yeni bir görsel üretir. Sosyal medya paylaşımları, içerik görselleri veya sanatsal talepler için kullan. Maliyet: ~$0.003/görsel.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        prompt: {
+          type: "string" as const,
+          description: "Üretilecek görselin detaylı açıklaması (İngilizce daha iyi sonuç verir).",
+        },
+      },
+      required: ["prompt"],
+    },
+  },
+  {
+    name: "post_to_social" as const,
+    description:
+      "Instagram, TikTok, Twitter gibi sosyal medya platformlarında paylaşım yapar. Görsel URL'si ve metin (caption) alır. LIME Social API'sini kullanır.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        title: {
+          type: "string" as const,
+          description: "Paylaşım açıklaması (caption).",
+        },
+        mediaUrl: {
+          type: "string" as const,
+          description: "Paylaşılacak görsel veya video URL'si (opsiyonel).",
+        },
+        platforms: {
+          type: "array" as const,
+          items: {
+            type: "string" as const,
+            enum: ["instagram", "tiktok", "x", "linkedin", "facebook"],
+          },
+          description: "Paylaşım yapılacak platformlar listesi.",
+        },
+        usernames: {
+          type: "array" as const,
+          items: {
+            type: "string" as const,
+          },
+          description: "Platform sırasıyla kullanılacak kullanıcı adları.",
+        },
+      },
+      required: ["title", "platforms", "usernames"],
+    },
+  },
 ];
 
 /**
@@ -136,6 +187,48 @@ export async function executeTool(
       } catch (error) {
         console.error(sanitizeForLog("CALENDAR_ERROR", { date, error: String(error) }));
         return "❌ Takvim etkinlikleri alınırken bir hata oluştu.";
+      }
+    }
+
+    case "generate_image": {
+      const prompt = params.prompt as string;
+      if (!prompt) return "Hata: prompt parametresi gerekli.";
+
+      if (!config.REPLICATE_API_TOKEN) {
+        return "⚠️ Görsel üretme yapılandırılmamış. REPLICATE_API_TOKEN ayarla.";
+      }
+
+      try {
+        const imageUrl = await generateFluxImage(prompt, config.REPLICATE_API_TOKEN);
+        // Hafızaya kaydet
+        memory.remember(`Yeni görsel üretildi: "${prompt}" - URL: ${imageUrl}`, "agent-action");
+        return `✅ Görsel başarıyla üretildi!\n🔗 URL: ${imageUrl}\n\nNot: Bu URL geçici olabilir, lütfen hemen kaydedin.`;
+      } catch (error) {
+        console.error(sanitizeForLog("IMAGE_GENERATION_ERROR", { prompt, error: String(error) }));
+        return "❌ Görsel üretilirken bir hata oluştu. Replicate bakiyenizi veya API anahtarınızı kontrol edin.";
+      }
+    }
+
+    case "post_to_social": {
+      const { title, mediaUrl, platforms, usernames } = params as any;
+
+      if (!config.LIME_SOCIAL_API_KEY) {
+        return "⚠️ Sosyal medya paylaşımı yapılandırılmamış. LIME_SOCIAL_API_KEY ayarla.";
+      }
+
+      const accounts = platforms.map((p: string, i: number) => ({
+        platform: p,
+        username: usernames[i]
+      }));
+
+      try {
+        const result = await postToSocialMedia({ title, mediaUrl, accounts }, config.LIME_SOCIAL_API_KEY);
+        // Hafızaya kaydet
+        memory.remember(`Sosyal medyada paylaşıldı: "${title}" (${platforms.join(", ")})`, "agent-action");
+        return `✅ Paylaşım başarıyla gönderildi!\nSonuç: ${JSON.stringify(result)}`;
+      } catch (error) {
+        console.error(sanitizeForLog("SOCIAL_POST_ERROR", { title, error: String(error) }));
+        return `❌ Paylaşım sırasında hata oluştu: ${String(error)}`;
       }
     }
 

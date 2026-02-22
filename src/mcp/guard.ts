@@ -77,6 +77,8 @@ const TOOL_ALLOWLIST = new Set([
   "remember_fact",
   "recall_memories",
   "get_calendar_events",
+  "generate_image",
+  "post_to_social",
 ]);
 
 /**

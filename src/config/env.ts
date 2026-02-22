@@ -16,6 +16,8 @@ export interface EnvConfig {
   GOOGLE_SERVICE_ACCOUNT_KEY_PATH: string | null;
   GOOGLE_CALENDAR_ID: string;
   HEARTBEAT_ENABLED: boolean;
+  REPLICATE_API_TOKEN: string | null;
+  LIME_SOCIAL_API_KEY: string | null;
 }
 
 function requireEnv(key: string): string {
@@ -55,6 +57,8 @@ export function loadConfig(): EnvConfig {
     GOOGLE_SERVICE_ACCOUNT_KEY_PATH: optionalEnv("GOOGLE_SERVICE_ACCOUNT_KEY_PATH"),
     GOOGLE_CALENDAR_ID: process.env.GOOGLE_CALENDAR_ID || "primary",
     HEARTBEAT_ENABLED: boolEnv("HEARTBEAT_ENABLED"),
+    REPLICATE_API_TOKEN: optionalEnv("REPLICATE_API_TOKEN"),
+    LIME_SOCIAL_API_KEY: optionalEnv("LIME_SOCIAL_API_KEY"),
   };
 
   if (isNaN(config.TELEGRAM_ALLOWLIST_USER_ID)) {
@@ -101,6 +105,18 @@ export function logConfigStatus(config: EnvConfig): void {
     console.log("✅ Heartbeat aktif (her gün 08:00)");
   } else {
     console.log("⏸️  Heartbeat kapalı (HEARTBEAT_ENABLED=false)");
+  }
+
+  if (config.REPLICATE_API_TOKEN) {
+    console.log("✅ Görsel üretme aktif (Replicate)");
+  } else {
+    console.log("⚠️  Görsel üretme kapalı (REPLICATE_API_TOKEN eksik)");
+  }
+
+  if (config.LIME_SOCIAL_API_KEY) {
+    console.log("✅ Sosyal medya paylaşımı aktif (Lime Social)");
+  } else {
+    console.log("⚠️  Sosyal medya paylaşımı kapalı (LIME_SOCIAL_API_KEY eksik)");
   }
 
   console.log("─────────────────────────────────────");
