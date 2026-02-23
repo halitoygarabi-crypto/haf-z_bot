@@ -79,6 +79,9 @@ const TOOL_ALLOWLIST = new Set([
   "get_calendar_events",
   "generate_image",
   "post_to_social",
+  "generate_video",
+  "generate_caption",
+  "generate_influencer",
 ]);
 
 /**
