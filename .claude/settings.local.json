@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npx create-expo-app:*)",
+      "Bash(npx expo install:*)",
+      "Bash(where:*)",
+      "Bash(pg_isready:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma:*)"
+    ]
+  }
+}

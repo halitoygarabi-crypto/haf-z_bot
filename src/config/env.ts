@@ -19,6 +19,8 @@ export interface EnvConfig {
   REPLICATE_API_TOKEN: string | null;
   LIME_SOCIAL_API_KEY: string | null;
   FAL_API_KEY: string | null;
+  SUPABASE_URL: string | null;
+  SUPABASE_ANON_KEY: string | null;
 }
 
 function requireEnv(key: string): string {
@@ -61,6 +63,8 @@ export function loadConfig(): EnvConfig {
     REPLICATE_API_TOKEN: optionalEnv("REPLICATE_API_TOKEN"),
     LIME_SOCIAL_API_KEY: optionalEnv("LIME_SOCIAL_API_KEY"),
     FAL_API_KEY: optionalEnv("FAL_API_KEY"),
+    SUPABASE_URL: optionalEnv("SUPABASE_URL"),
+    SUPABASE_ANON_KEY: optionalEnv("SUPABASE_ANON_KEY"),
   };
 
   if (isNaN(config.TELEGRAM_ALLOWLIST_USER_ID)) {
@@ -125,6 +129,12 @@ export function logConfigStatus(config: EnvConfig): void {
     console.log("✅ Video & Influencer üretme aktif (fal.ai)");
   } else {
     console.log("⚠️  Video & Influencer üretme kapalı (FAL_API_KEY eksik)");
+  }
+  
+  if (config.SUPABASE_URL) {
+    console.log("✅ Supabase bağlantısı hazır (Botlar arası yönetim)");
+  } else {
+    console.log("⚠️  Supabase kapalı (SUPABASE_URL eksik)");
   }
 
   console.log("─────────────────────────────────────");

@@ -5,8 +5,10 @@
  */
 
 export interface ChatMessage {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "tool";
   content: string | ContentPart[];
+  tool_calls?: any[];
+  tool_call_id?: string;
   timestamp: number;
 }
 
@@ -23,15 +25,26 @@ class ConversationManager {
   private histories = new Map<number, ChatMessage[]>();
 
   /**
-   * Mesaj ekle (kullanıcı veya asistan).
+   * Mesaj ekle (kullanıcı, asistan veya tool sonucu).
    */
-  addMessage(chatId: number, role: "user" | "assistant", content: string | ContentPart[]): void {
+  addMessage(
+    chatId: number, 
+    role: "user" | "assistant" | "tool", 
+    content: string | ContentPart[],
+    options?: { tool_calls?: any[]; tool_call_id?: string }
+  ): void {
     if (!this.histories.has(chatId)) {
       this.histories.set(chatId, []);
     }
 
     const history = this.histories.get(chatId)!;
-    history.push({ role, content, timestamp: Date.now() });
+    history.push({ 
+      role, 
+      content, 
+      timestamp: Date.now(),
+      tool_calls: options?.tool_calls,
+      tool_call_id: options?.tool_call_id,
+    });
 
     // Eski mesajları temizle (TTL)
     const cutoff = Date.now() - HISTORY_TTL_MS;

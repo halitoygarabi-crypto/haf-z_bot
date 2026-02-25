@@ -7,6 +7,7 @@ import { postToSocialMedia } from "../mcp/social.js";
 import { generateVideo } from "../mcp/video.js";
 import { generateCaption, generateVideoPrompt } from "../mcp/caption.js";
 import { generateInfluencer } from "../mcp/influencer.js";
+import { getSupabase } from "../utils/supabase.js";
 
 /**
  * Tool tanımları — Claude'un kullanabileceği araçlar.
@@ -217,6 +218,31 @@ export const toolDefinitions = [
       required: ["prompt"],
     },
   },
+  {
+    name: "manage_subordinate_bot" as const,
+    description:
+      "Diğer yardımcı botlara (Utus veya Avyna) görev atar. HafızBot yönetici olarak diğer botları kontrol edebilir.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        target: {
+          type: "string" as const,
+          enum: ["utus", "avyna", "all"],
+          description: "Görevin gönderileceği bot.",
+        },
+        task: {
+          type: "string" as const,
+          description: "Botun gerçekleştirmesi gereken görev açıklaması.",
+        },
+        priority: {
+          type: "string" as const,
+          enum: ["low", "normal", "high"],
+          description: "Görevin önceliği.",
+        },
+      },
+      required: ["target", "task"],
+    },
+  },
 ];
 
 /**
@@ -294,8 +320,9 @@ export async function executeTool(
 
       try {
         const imageUrl = await generateFluxImage(prompt, config.REPLICATE_API_TOKEN);
-        memory.remember(`Yeni görsel üretildi: "${prompt}" - URL: ${imageUrl}`, "agent-action");
-        return `✅ Görsel başarıyla üretildi!\n🔗 URL: ${imageUrl}\n\nNot: Bu URL geçici olabilir, lütfen hemen kaydedin.`;
+        // KRİTİK: Üretilen her şeyi kalıcı hafızaya çak!
+        memory.remember(`[ÜRETİLDİ] Görsel İstemi: ${prompt} | URL: ${imageUrl}`, "agent-action");
+        return `✅ Görsel başarıyla üretildi!\n🔗 URL: ${imageUrl}\n\nNot: Bu görseli Hafızama kaydettim, istediğin zaman "paylaş" diyebilirsin.`;
       } catch (error) {
         console.error(sanitizeForLog("IMAGE_GENERATION_ERROR", { prompt, error: String(error) }));
         return "❌ Görsel üretilirken bir hata oluştu. Replicate bakiyenizi veya API anahtarınızı kontrol edin.";
@@ -357,12 +384,12 @@ export async function executeTool(
           config.FAL_API_KEY
         );
 
-        if (!result.success || !result.videoUrl) {
+        if (!result.videoUrl) {
           return `❌ Video üretilemedi: ${result.error || "Bilinmeyen hata"}`;
         }
 
-        memory.remember(`Video üretildi: "${(params.prompt as string).substring(0, 50)}..." - URL: ${result.videoUrl}`, "agent-action");
-        return `✅ Video başarıyla üretildi! 🎬\n🔗 URL: ${result.videoUrl}\n\n📐 Format: ${(params.aspectRatio as string) || "16:9"}\n⏱️ Süre: ${(params.duration as number) || 5} saniye\n\nBu videoyu sosyal medyada paylaşmak ister misin?`;
+        memory.remember(`[ÜRETİLDİ] Video İstemi: ${params.prompt} | URL: ${result.videoUrl}`, "agent-action");
+        return `✅ Video başarıyla üretildi! 🎬\n🔗 URL: ${result.videoUrl}\n\nBu videoyu Hafızama kaydettim. Paylaşmamı ister misin?`;
       } catch (error) {
         console.error(sanitizeForLog("VIDEO_GENERATION_ERROR", { prompt, error: String(error) }));
         return `❌ Video üretilirken hata oluştu: ${String(error)}`;
@@ -422,6 +449,43 @@ export async function executeTool(
       } catch (error) {
         console.error(sanitizeForLog("INFLUENCER_GENERATION_ERROR", { prompt, error: String(error) }));
         return `❌ Influencer görseli üretilirken hata oluştu: ${String(error)}`;
+      }
+    }
+
+    case "manage_subordinate_bot": {
+      const { target, task, priority = "normal" } = params as any;
+
+      if (!config.SUPABASE_URL) {
+        return "⚠️ Supabase yapılandırılmamış. Bot yönetimi için SUPABASE_URL gereklidir.";
+      }
+
+      try {
+        const supabase = getSupabase(config);
+        const { data, error } = await supabase
+          .from("bot_directives")
+          .insert([
+            {
+              sender: "hafiz",
+              target,
+              command: task,
+              payload: { priority },
+              status: "pending",
+            },
+          ])
+          .select();
+
+        if (error) {
+          if (error.code === "42P01") { // Relation does not exist
+            return "❌ 'bot_directives' tablosu bulunamadı. Lütfen önce veritabanında gerekli tabloyu oluşturun.";
+          }
+          throw error;
+        }
+
+        memory.remember(`Yardımcı bota görev verildi: ${target} -> ${task}`, "agent-action");
+        return `✅ Görev başarıyla iletildi!\n🤖 Hedef: ${target}\n📝 Görev: ${task}\n\nHafızBot yönetici olarak görevi kayıt altına aldı. ${target === "all" ? "Botlar" : target + " Bot"} bu görevi en kısa sürede işleyecektir.`;
+      } catch (error) {
+        console.error("Bot management error:", error);
+        return `❌ Görev iletilirken hata oluştu: ${String(error)}`;
       }
     }
 

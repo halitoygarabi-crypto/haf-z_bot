@@ -3,6 +3,7 @@ import { handleTextMessage } from "./text.js";
 import { handleVoiceMessage } from "./voice.js";
 import { handlePhotoMessage } from "./photo.js";
 import { triggerHeartbeatTest } from "../heartbeat/index.js";
+import { conversationManager } from "../agent/conversation.js";
 import type { EnvConfig } from "../config/env.js";
 import type { MemoryManager } from "../memory/index.js";
 
@@ -46,6 +47,12 @@ export function registerHandlers(
   // /heartbeat_test komutu — hemen bir heartbeat mesajı gönder
   bot.command("heartbeat_test", async (ctx) => {
     await triggerHeartbeatTest(bot, config.TELEGRAM_ALLOWLIST_USER_ID);
+  });
+
+  // /reset komutu — konuşma geçmişini temizle
+  bot.command("reset", async (ctx) => {
+    conversationManager.clear(ctx.chat.id);
+    await ctx.reply("🧹 Konuşma geçmişi temizlendi. Hazırım!");
   });
 
   // 📸 Fotoğraf handler — vision desteği

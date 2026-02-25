@@ -4,6 +4,7 @@ import { createBot } from "./telegram/bot.js";
 import { registerHandlers } from "./handlers/index.js";
 import { MemoryManager } from "./memory/index.js";
 import { startHeartbeat, stopHeartbeat } from "./heartbeat/index.js";
+import { SubordinateManager } from "./services/subordinate_manager.js";
 
 async function main(): Promise<void> {
   // 0. Debug log temizle
@@ -26,9 +27,12 @@ async function main(): Promise<void> {
   // 5. Heartbeat başlat (cron)
   startHeartbeat(bot, config);
 
+  // 6. Yardımcı bot servislerini (Avyna/Utus) başlat
+  SubordinateManager.start(bot, config, memory);
+
   // 6. Graceful shutdown
   const shutdown = () => {
-    console.log("\n🛑 Agent Claw kapatılıyor...");
+    console.log("\n🛑 Peskir kapatılıyor...");
     stopHeartbeat();
     memory.close();
     bot.stop();
@@ -38,7 +42,7 @@ async function main(): Promise<void> {
   process.on("SIGTERM", shutdown);
 
   // 6. Long-polling başlat (web server yok!)
-  console.log("🚀 Agent Claw hazır! Telegram'dan mesaj bekleniyor...");
+  console.log("🚀 Peskir hazır! Telegram'dan mesaj bekleniyor...");
   await bot.start();
 }
 
