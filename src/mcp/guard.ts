@@ -82,6 +82,10 @@ const TOOL_ALLOWLIST = new Set([
   "generate_video",
   "generate_caption",
   "generate_influencer",
+  "manage_subordinate_bot",
+  "dashboard_list_clients",
+  "dashboard_create_post",
+  "dashboard_get_stats",
 ]);
 
 /**

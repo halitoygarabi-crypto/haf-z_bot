@@ -8,6 +8,7 @@ import { generateVideo } from "../mcp/video.js";
 import { generateCaption, generateVideoPrompt } from "../mcp/caption.js";
 import { generateInfluencer } from "../mcp/influencer.js";
 import { getSupabase } from "../utils/supabase.js";
+import { DashboardService } from "../services/dashboard_service.js";
 
 /**
  * Tool tanımları — Claude'un kullanabileceği araçlar.
@@ -241,6 +242,70 @@ export const toolDefinitions = [
         },
       },
       required: ["target", "task"],
+    },
+  },
+  {
+    name: "dashboard_list_clients" as const,
+    description:
+      "Sosyal Medya Dashboard'undaki kayıtlı müşteri listesini getirir. Hangi müşteriler için içerik üretilebileceğini görmek için kullan.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: [] as string[],
+    },
+  },
+  {
+    name: "dashboard_create_post" as const,
+    description:
+      "Sosyal Medya Dashboard'una yeni bir paylaşım (post) ekler. Bu araçla eklenen postlar panelde 'İçerikler' bölümünde görünür ve planlanan zamanda otomatik paylaşılabilir.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        clientId: {
+          type: "string" as const,
+          description: "Müşterinin UUID'si (dashboard_list_clients ile alınır).",
+        },
+        title: {
+          type: "string" as const,
+          description: "Görselin başlığı veya kısa tanımı.",
+        },
+        content: {
+          type: "string" as const,
+          description: "Paylaşım metni (caption).",
+        },
+        imageUrls: {
+          type: "array" as const,
+          items: { type: "string" as const },
+          description: "Paylaşılacak görsel veya video URL'leri.",
+        },
+        platforms: {
+          type: "array" as const,
+          items: {
+            type: "string" as const,
+            enum: ["instagram", "twitter", "linkedin", "tiktok"],
+          },
+          description: "Paylaşım yapılacak platformlar.",
+        },
+        status: {
+          type: "string" as const,
+          enum: ["scheduled", "posted", "failed", "draft"],
+          description: "Postun durumu. Hemen panelde görünsün ama paylaşılmasın istiyorsan 'draft', planlansın istiyorsan 'scheduled'. Varsayılan: draft",
+        },
+        scheduledTime: {
+          type: "string" as const,
+          description: "Planlanan paylaşım zamanı (ISO formatında). Örn: 2026-03-05T14:30:00Z",
+        },
+      },
+      required: ["clientId", "title", "content", "platforms"],
+    },
+  },
+  {
+    name: "dashboard_get_stats" as const,
+    description: "Sosyal medya platformlarındaki güncel takipçi, etkileşim ve erişim istatistiklerini getirir.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: [] as string[],
     },
   },
 ];
@@ -486,6 +551,51 @@ export async function executeTool(
       } catch (error) {
         console.error("Bot management error:", error);
         return `❌ Görev iletilirken hata oluştu: ${String(error)}`;
+      }
+    }
+
+    case "dashboard_list_clients": {
+      try {
+        const clients = await DashboardService.listClients(config);
+        if (clients.length === 0) return "Dashboard'da kayıtlı müşteri bulunamadı.";
+        return clients
+          .map((c: any) => `- ID: ${c.id} | Firma: ${c.company_name} | Sektör: ${c.industry || "Belirtilmemiş"}`)
+          .join("\n");
+      } catch (error) {
+        return `❌ Müşteri listesi alınırken hata: ${String(error)}`;
+      }
+    }
+
+    case "dashboard_create_post": {
+      const { clientId, title, content, imageUrls, platforms, status = "draft", scheduledTime } = params as any;
+      try {
+        await DashboardService.createPost(
+          {
+            customer_id: clientId,
+            title,
+            content,
+            image_urls: imageUrls,
+            platforms,
+            status,
+            scheduled_time: scheduledTime,
+          },
+          config
+        );
+        return `✅ Post başarıyla Dashboard'a eklendi!\n📌 Başlık: ${title}\n🏢 Müşteri ID: ${clientId}\n🛠️ Durum: ${status}`;
+      } catch (error) {
+        return `❌ Dashboard'a post eklenirken hata: ${String(error)}`;
+      }
+    }
+
+    case "dashboard_get_stats": {
+      try {
+        const stats = await DashboardService.getStats(config);
+        if (stats.length === 0) return "Henüz istatistik verisi bulunmuyor.";
+        return stats
+          .map((s: any) => `📊 [${s.platform.toUpperCase()}] Takipçi: ${s.followers} | Etkileşim: %${s.avg_engagement_rate} | Erişim: ${s.reach}`)
+          .join("\n");
+      } catch (error) {
+        return `❌ İstatistikler alınırken hata: ${String(error)}`;
       }
     }
 

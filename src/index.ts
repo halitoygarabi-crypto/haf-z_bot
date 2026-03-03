@@ -32,7 +32,7 @@ async function main(): Promise<void> {
 
   // 6. Graceful shutdown
   const shutdown = () => {
-    console.log("\n🛑 Peskir kapatılıyor...");
+    console.log("\n🛑 HafızBot kapatılıyor...");
     stopHeartbeat();
     memory.close();
     bot.stop();
@@ -42,7 +42,7 @@ async function main(): Promise<void> {
   process.on("SIGTERM", shutdown);
 
   // 6. Long-polling başlat (web server yok!)
-  console.log("🚀 Peskir hazır! Telegram'dan mesaj bekleniyor...");
+  console.log("🚀 HafızBot hazır! Telegram'dan mesaj bekleniyor...");
   await bot.start();
 }
 
