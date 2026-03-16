@@ -64,7 +64,7 @@ async function runTests(): Promise<void> {
   // Test 6: Core memory dosyası var mı
   const coreMemory = memory.getCoreMemory();
   assert(coreMemory.length > 0, "Core memory dosyası okundu");
-  assert(coreMemory.includes("Agent Claw"), "Core memory başlık içeriyor");
+  assert(coreMemory.includes("HafızBot"), "Core memory başlık içeriyor");
 
   // Test 7: Memory log dosyası oluşturuldu mu
   const logPath = path.join(MEMORY_DIR, "memory_log.md");

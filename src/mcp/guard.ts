@@ -86,6 +86,10 @@ const TOOL_ALLOWLIST = new Set([
   "dashboard_list_clients",
   "dashboard_create_post",
   "dashboard_get_stats",
+  // Pazarlama Bot tools
+  "analyze_marketing_trends",
+  "plan_campaign",
+  "generate_ab_content",
 ]);
 
 /**

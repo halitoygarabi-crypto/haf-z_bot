@@ -222,14 +222,14 @@ export const toolDefinitions = [
   {
     name: "manage_subordinate_bot" as const,
     description:
-      "Diğer yardımcı botlara (Utus veya Avyna) görev atar. HafızBot yönetici olarak diğer botları kontrol edebilir.",
+      "Diğer yardımcı botlara (Utus, Avyna veya Pazarlama) görev atar. HafızBot yönetici olarak diğer botları kontrol edebilir. marketing = Pazarlama Bot (kampanya, trend analizi, Postiz zamanlama, A/B test).",
     input_schema: {
       type: "object" as const,
       properties: {
         target: {
           type: "string" as const,
-          enum: ["utus", "avyna", "all"],
-          description: "Görevin gönderileceği bot.",
+          enum: ["utus", "avyna", "marketing", "all"],
+          description: "Görevin gönderileceği bot. marketing = Pazarlama Bot.",
         },
         task: {
           type: "string" as const,
@@ -300,12 +300,121 @@ export const toolDefinitions = [
     },
   },
   {
+    name: "generate_full_content_package" as const,
+    description:
+      "Tek bir komutla görsel üretir, caption yazar ve dashboard'a taslak olarak ekler. İçerik üretim sürecini hızlandırmak için kullan. Çıktı olarak görsel URL'si ve üretilen caption'ı döner.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        clientId: {
+          type: "string" as const,
+          description: "Müşterinin UUID'si (dashboard_list_clients ile alınır).",
+        },
+        topic: {
+          type: "string" as const,
+          description: "İçeriğin konusu (örn: 'lüks bahçe mobilyası').",
+        },
+        platforms: {
+          type: "array" as const,
+          items: {
+            type: "string" as const,
+            enum: ["instagram", "twitter", "linkedin", "tiktok"],
+          },
+          description: "Hedef platformlar.",
+        },
+        tone: {
+          type: "string" as const,
+          enum: ["professional", "casual", "funny", "inspiring"],
+          description: "İçeriğin tonu. Varsayılan: professional",
+        },
+      },
+      required: ["clientId", "topic", "platforms"],
+    },
+  },
+  {
     name: "dashboard_get_stats" as const,
     description: "Sosyal medya platformlarındaki güncel takipçi, etkileşim ve erişim istatistiklerini getirir.",
     input_schema: {
       type: "object" as const,
       properties: {},
       required: [] as string[],
+    },
+  },
+
+  // ═══════════════════════════════════════════
+  // PAZARLAMA BOT ARAÇLARI
+  // ═══════════════════════════════════════════
+
+  {
+    name: "analyze_marketing_trends" as const,
+    description:
+      "Belirtilen sektör veya konu için pazarlama trendlerini, hashtag önerilerini ve SEO anahtar kelimelerini analiz eder. LLM tabanlı analiz yapar.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        topic: {
+          type: "string" as const,
+          description: "Analiz edilecek sektör, marka veya konu.",
+        },
+        platforms: {
+          type: "array" as const,
+          items: { type: "string" as const },
+          description: "Hedef platformlar (instagram, tiktok, x, linkedin).",
+        },
+      },
+      required: ["topic"],
+    },
+  },
+  {
+    name: "plan_campaign" as const,
+    description:
+      "Belirtilen hedef için haftalık veya aylık pazarlama kampanya planı oluşturur. İçerik takvimi, tema önerileri ve KPI hedefleri içeren strateji belgesi üretir.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        objective: {
+          type: "string" as const,
+          description: "Kampanya hedefi (örn: marka bilinirliğini artırmak, ürün lansmanı, satış artırma).",
+        },
+        duration: {
+          type: "string" as const,
+          enum: ["1_week", "2_weeks", "1_month"],
+          description: "Kampanya süresi. Varsayılan: 1_week",
+        },
+        platforms: {
+          type: "array" as const,
+          items: { type: "string" as const },
+          description: "Kampanyanın yürütüleceği platformlar.",
+        },
+        brandContext: {
+          type: "string" as const,
+          description: "Marka hakkında özet bilgi (sektör, hedef kitle, ton).",
+        },
+      },
+      required: ["objective"],
+    },
+  },
+  {
+    name: "generate_ab_content" as const,
+    description:
+      "Aynı konu için A/B test varyasyonları üretir. Farklı tonlarda, uzunluklarda veya formatlarda 2-4 içerik varyasyonu oluşturur. Hangisinin daha iyi performans göstereceğini test etmek için kullan.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        topic: {
+          type: "string" as const,
+          description: "İçerik üretilecek konu.",
+        },
+        platform: {
+          type: "string" as const,
+          description: "Hedef platform. Varsayılan: instagram",
+        },
+        variations: {
+          type: "number" as const,
+          description: "Üretilecek varyasyon sayısı (2-4). Varsayılan: 2",
+        },
+      },
+      required: ["topic"],
     },
   },
 ];
@@ -526,28 +635,33 @@ export async function executeTool(
 
       try {
         const supabase = getSupabase(config);
-        const { data, error } = await supabase
-          .from("bot_directives")
-          .insert([
-            {
-              sender: "hafiz",
-              target,
-              command: task,
-              payload: { priority },
-              status: "pending",
-            },
-          ])
-          .select();
 
-        if (error) {
-          if (error.code === "42P01") { // Relation does not exist
-            return "❌ 'bot_directives' tablosu bulunamadı. Lütfen önce veritabanında gerekli tabloyu oluşturun.";
+        // "all" ise tüm botlara ayrı ayrı görev at
+        const targets = target === "all" ? ["avyna", "utus", "marketing"] : [target];
+
+        for (const t of targets) {
+          const { error } = await supabase
+            .from("bot_directives")
+            .insert([
+              {
+                sender: "hafiz",
+                target: t,
+                command: task,
+                payload: { priority },
+                status: "pending",
+              },
+            ]);
+
+          if (error) {
+            if (error.code === "42P01") {
+              return "❌ 'bot_directives' tablosu bulunamadı. Lütfen önce veritabanında gerekli tabloyu oluşturun.";
+            }
+            throw error;
           }
-          throw error;
         }
 
-        memory.remember(`Yardımcı bota görev verildi: ${target} -> ${task}`, "agent-action");
-        return `✅ Görev başarıyla iletildi!\n🤖 Hedef: ${target}\n📝 Görev: ${task}\n\nHafızBot yönetici olarak görevi kayıt altına aldı. ${target === "all" ? "Botlar" : target + " Bot"} bu görevi en kısa sürede işleyecektir.`;
+        memory.remember(`Yardımcı bot(lar)a görev verildi: ${targets.join(", ")} -> ${task}`, "agent-action");
+        return `✅ Görev başarıyla iletildi!\n🤖 Hedef: ${targets.join(", ")}\n📝 Görev: ${task}\n\nHafızBot yönetici olarak görevi kayıt altına aldı.`;
       } catch (error) {
         console.error("Bot management error:", error);
         return `❌ Görev iletilirken hata oluştu: ${String(error)}`;
@@ -596,6 +710,178 @@ export async function executeTool(
           .join("\n");
       } catch (error) {
         return `❌ İstatistikler alınırken hata: ${String(error)}`;
+      }
+    }
+
+    // ═══════════════════════════════════════════
+    // PAZARLAMA BOT ARAÇLARI
+    // ═══════════════════════════════════════════
+
+    case "analyze_marketing_trends": {
+      const { topic, platforms: trendPlatforms } = params as any;
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${config.MODEL_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: config.MODEL_NAME,
+            max_tokens: 1500,
+            messages: [
+              {
+                role: "system",
+                content: "Sen bir dijital pazarlama trend analisti ve SEO uzmanısın. Türkçe yanıt ver.",
+              },
+              {
+                role: "user",
+                content: `Şu konu/sektör için güncel pazarlama trendlerini analiz et: "${topic}"
+Hedef platformlar: ${(trendPlatforms || ["instagram", "tiktok"]).join(", ")}
+
+Aşağıdaki bilgileri ver:
+1. Güncel trendler (3-5 madde)
+2. Önerilen hashtag'ler (10 adet)
+3. SEO anahtar kelimeleri (5-8 adet)
+4. İçerik format önerileri (video, carousel, story vb.)
+5. En iyi paylaşım zamanları`,
+              },
+            ],
+          }),
+        });
+
+        if (!response.ok) throw new Error(`API hatası: ${response.status}`);
+        const data = await response.json();
+        const result = data.choices?.[0]?.message?.content || "Analiz yapılamadı.";
+        memory.remember(`Trend analizi yapıldı: "${topic}"`, "agent-action");
+        return result;
+      } catch (error) {
+        return `❌ Trend analizi hatası: ${String(error)}`;
+      }
+    }
+
+    case "plan_campaign": {
+      const { objective, duration, platforms: campaignPlatforms, brandContext } = params as any;
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${config.MODEL_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: config.MODEL_NAME,
+            max_tokens: 2000,
+            messages: [
+              {
+                role: "system",
+                content: "Sen bir senior dijital pazarlama stratejistisin. Detaylı kampanya planları oluşturursun. Türkçe yanıt ver.",
+              },
+              {
+                role: "user",
+                content: `Aşağıdaki hedef için kampanya planı oluştur:
+Hedef: ${objective}
+Süre: ${duration || "1_week"}
+Platformlar: ${(campaignPlatforms || ["instagram", "tiktok"]).join(", ")}
+Marka Bilgisi: ${brandContext || "Genel"}
+
+Plan içeriği:
+1. Kampanya Özeti ve Ana Tema
+2. Gün-gün içerik takvimi
+3. Her gün için: platform, içerik türü (görsel/video/carousel), konu, caption önerisi
+4. KPI hedefleri (erişim, etkileşim, takipçi artışı)
+5. Bütçe önerisi (organik vs reklamlı)`,
+              },
+            ],
+          }),
+        });
+
+        if (!response.ok) throw new Error(`API hatası: ${response.status}`);
+        const data = await response.json();
+        const result = data.choices?.[0]?.message?.content || "Kampanya planı oluşturulamadı.";
+        memory.remember(`Kampanya planı oluşturuldu: "${objective}" (${duration || "1_week"})`, "agent-action");
+        return result;
+      } catch (error) {
+        return `❌ Kampanya planı hatası: ${String(error)}`;
+      }
+    }
+
+    case "generate_ab_content": {
+      const { topic: abTopic, platform: abPlatform, variations } = params as any;
+      const numVariations = Math.min(Math.max(variations || 2, 2), 4);
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${config.MODEL_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: config.MODEL_NAME,
+            max_tokens: 1500,
+            messages: [
+              {
+                role: "system",
+                content: "Sen bir A/B test uzmanı ve sosyal medya içerik stratejistisin. Türkçe yanıt ver.",
+              },
+              {
+                role: "user",
+                content: `"${abTopic}" konusu için ${numVariations} farklı A/B test varyasyonu oluştur.
+Platform: ${abPlatform || "instagram"}
+
+Her varyasyon için:
+- Varyasyon adı (A, B, C, D)
+- Ton farkı (örn: ciddi vs eğlenceli, kısa vs uzun)
+- Caption metni (hashtag dahil)
+- Beklenen performans notu
+- Hedef kitle segmenti`,
+              },
+            ],
+          }),
+        });
+
+        if (!response.ok) throw new Error(`API hatası: ${response.status}`);
+        const data = await response.json();
+        const result = data.choices?.[0]?.message?.content || "A/B içerik oluşturulamadı.";
+        memory.remember(`A/B content üretildi: "${abTopic}" (${numVariations} varyasyon)`, "agent-action");
+        return result;
+      } catch (error) {
+        return `❌ A/B içerik üretme hatası: ${String(error)}`;
+      }
+    }
+
+    case "generate_full_content_package": {
+      const { clientId, topic, platforms, tone = "professional" } = params as any;
+      
+      try {
+        console.log(`📦 İçerik paketi hazırlanıyor: "${topic}"...`);
+        
+        // 1. Görsel Üret (İngilizce optimize prompt ile)
+        const imagePrompt = `High-end luxury furniture design, ${topic}, elegant setting, 8k resolution, photorealistic, cinematic lighting, professional photography.`;
+        const imageUrl = await generateFluxImage(imagePrompt, config.REPLICATE_API_TOKEN!);
+        
+        // 2. Caption Üret
+        const caption = await generateCaption(
+          { title: topic, platform: platforms[0], tone },
+          config.MODEL_API_KEY,
+          config.MODEL_NAME
+        );
+        
+        // 3. Dashboard'a Ekle
+        await DashboardService.createPost({
+          customer_id: clientId,
+          title: topic,
+          content: caption,
+          image_urls: [imageUrl],
+          platforms,
+          status: "draft"
+        }, config);
+
+        memory.remember(`Tam içerik paketi üretildi ve dashboard'a kaydedildi: "${topic}"`, "agent-action");
+        
+        return `✅ **İçerik Paketi Hazır!**\n\n🖼️ **Görsel:** ${imageUrl}\n\n✍️ **Caption:**\n${caption}\n\n📌 *Not: İçerik Dashboard'a 'Draft' olarak eklendi.*`;
+      } catch (error) {
+        return `❌ Paket üretilirken hata oluştu: ${String(error)}`;
       }
     }
 
