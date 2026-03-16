@@ -6,6 +6,7 @@ import { triggerHeartbeatTest } from "../heartbeat/index.js";
 import { conversationManager } from "../agent/conversation.js";
 import type { EnvConfig } from "../config/env.js";
 import type { MemoryManager } from "../memory/index.js";
+import type { MemoryRow } from "../memory/store.js";
 
 /**
  * Tüm handler'ları bot'a kaydeder.
@@ -128,7 +129,7 @@ _Tüm sistemler en son stabil sürümde çalışıyor._
       return;
     }
     const formatted = results
-      .map((r, i) => `${i + 1}. [${r.created_at}] ${r.content}`)
+      .map((r: MemoryRow, i: number) => `${i + 1}. [${r.created_at}] ${r.content}`)
       .join("\n");
     await ctx.reply(`🔍 Hafıza sonuçları (${results.length}):\n\n${formatted}`);
   });

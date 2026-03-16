@@ -9,6 +9,7 @@ import { generateCaption, generateVideoPrompt } from "../mcp/caption.js";
 import { generateInfluencer } from "../mcp/influencer.js";
 import { getSupabase } from "../utils/supabase.js";
 import { DashboardService } from "../services/dashboard_service.js";
+import type { MemoryRow } from "../memory/store.js";
 
 /**
  * Tool tanımları — Claude'un kullanabileceği araçlar.
@@ -460,7 +461,7 @@ export async function executeTool(
         return "Hafızada bu konuyla ilgili kayıt bulunamadı.";
       }
       return results
-        .map((r, i) => `${i + 1}. [${r.created_at}] ${r.content}`)
+        .map((r: MemoryRow, i: number) => `${i + 1}. [${r.created_at}] ${r.content}`)
         .join("\n");
     }
 

@@ -52,7 +52,7 @@ export async function runAvynaLoop(
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const response = await client.chat.completions.create({
       model: config.MODEL_NAME, // Gemini 2.5 Flash veya 2.0
-      tools: toolDefinitions.map(t => ({
+      tools: toolDefinitions.map((t: any) => ({
         type: "function",
         function: { name: t.name, description: t.description, parameters: t.input_schema }
       })) as any,

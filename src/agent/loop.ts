@@ -3,6 +3,7 @@ import { toolDefinitions, executeTool } from "./tools.js";
 import { conversationManager, type ContentPart } from "./conversation.js";
 import type { EnvConfig } from "../config/env.js";
 import type { MemoryManager } from "../memory/index.js";
+import type { MemoryRow } from "../memory/store.js";
 
 const MAX_ITERATIONS = 10;
 
@@ -28,7 +29,7 @@ function buildSystemPrompt(
   const relatedMemories = memory.recall(userMessage, 3);
   if (relatedMemories.length > 0) {
     const memoriesText = relatedMemories
-      .map((m) => `- [${m.created_at}] ${m.content}`)
+      .map((m: MemoryRow) => `- [${m.created_at}] ${m.content}`)
       .join("\n");
     prompt += `\n\n--- İLGİLİ HAFIZA KAYITLARI ---\n${memoriesText}`;
   }
