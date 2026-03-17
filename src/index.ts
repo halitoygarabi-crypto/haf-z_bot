@@ -14,21 +14,40 @@ async function main(): Promise<void> {
   const config = loadConfig();
   logConfigStatus(config);
 
-  // 2. Hafıza sistemi başlat
-  const memory = new MemoryManager();
+  // 2. Rol bazlı token seçimi
+  let botToken = config.TELEGRAM_BOT_TOKEN;
+  if (config.BOT_ROLE === "hafiz" && config.HAFIZ_BOT_TOKEN) {
+    botToken = config.HAFIZ_BOT_TOKEN;
+  } else if (config.BOT_ROLE === "polmark_ai" && config.POLMARK_AI_BOT_TOKEN) {
+    botToken = config.POLMARK_AI_BOT_TOKEN;
+  } else if (config.BOT_ROLE === "sferif" && config.SFERIF_BOT_TOKEN) {
+    botToken = config.SFERIF_BOT_TOKEN;
+  } else if (config.BOT_ROLE === "bozo" && config.BOZO_BOT_TOKEN) {
+    botToken = config.BOZO_BOT_TOKEN;
+  }
+
+  // 3. Hafıza sistemi başlat
+  const memory = new MemoryManager(config.BOT_ROLE);
   memory.initialize();
 
-  // 3. Bot oluştur (allowlist middleware dahil)
-  const bot = createBot(config);
+  // 4. Bot oluştur (allowlist middleware dahil)
+  const bot = new (await import("grammy")).Bot(botToken);
+  
+  // Allowlist middleware
+  bot.use(async (ctx, next) => {
+    const userId = ctx.from?.id;
+    if (!userId || userId !== config.TELEGRAM_ALLOWLIST_USER_ID) return;
+    await next();
+  });
 
-  // 4. Handler'ları kaydet
+  // 5. Handler'ları kaydet
   registerHandlers(bot, config, memory);
 
-  // 5. Heartbeat başlat (cron)
-  startHeartbeat(bot, config);
-
-  // 6. Yardımcı bot servislerini (Avyna/Utus) başlat
-  SubordinateManager.start(bot, config, memory);
+  // 6. Heartbeat başlat (sadece hafız botu için isteğe bağlı, ama genel kalsın)
+  if (config.BOT_ROLE === "hafiz") {
+    startHeartbeat(bot, config);
+    SubordinateManager.start(bot, config, memory);
+  }
 
   // 6. Graceful shutdown
   const shutdown = () => {

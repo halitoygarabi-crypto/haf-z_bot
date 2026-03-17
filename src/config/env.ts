@@ -2,6 +2,11 @@ import "dotenv/config";
 
 export interface EnvConfig {
   TELEGRAM_BOT_TOKEN: string;
+  POLMARK_AI_BOT_TOKEN: string | null;
+  HAFIZ_BOT_TOKEN: string | null;
+  SFERIF_BOT_TOKEN: string | null;
+  BOZO_BOT_TOKEN: string | null;
+  BOT_ROLE: string;
   MODEL_API_KEY: string;
   MODEL_PROVIDER: "anthropic" | "openrouter";
   MODEL_NAME: string;
@@ -46,6 +51,11 @@ function boolEnv(key: string, fallback: boolean = false): boolean {
 export function loadConfig(): EnvConfig {
   const config: EnvConfig = {
     TELEGRAM_BOT_TOKEN: requireEnv("TELEGRAM_BOT_TOKEN"),
+    POLMARK_AI_BOT_TOKEN: optionalEnv("POLMARK_AI_BOT_TOKEN"),
+    HAFIZ_BOT_TOKEN: optionalEnv("HAFIZ_BOT_TOKEN"),
+    SFERIF_BOT_TOKEN: optionalEnv("SFERIF_BOT_TOKEN"),
+    BOZO_BOT_TOKEN: optionalEnv("BOZO_BOT_TOKEN"),
+    BOT_ROLE: process.env.BOT_ROLE || "hafiz",
     MODEL_API_KEY: requireEnv("MODEL_API_KEY"),
     MODEL_PROVIDER: (process.env.MODEL_PROVIDER === "openrouter" ? "openrouter" : "anthropic") as "anthropic" | "openrouter",
     MODEL_NAME: process.env.MODEL_NAME || "claude-sonnet-4-20250514",

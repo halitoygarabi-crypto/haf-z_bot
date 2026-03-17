@@ -8,17 +8,19 @@ import { appendMemoryLog } from "./log.js";
  */
 export class MemoryManager {
   private store: MemoryStore;
+  private role: string;
 
-  constructor() {
+  constructor(role: string = "hafiz") {
     this.store = new MemoryStore();
+    this.role = role;
   }
 
   /**
    * Hafıza sistemini başlatır, gerekli dosyaları oluşturur.
    */
   initialize(): void {
-    ensureCoreMemory();
-    console.log(`🧠 Hafıza sistemi başlatıldı (${this.store.getMemoryCount()} kayıt)`);
+    ensureCoreMemory(this.role);
+    console.log(`🧠 [${this.role}] Hafıza sistemi başlatıldı (${this.store.getMemoryCount()} kayıt)`);
   }
 
   /**
@@ -43,14 +45,14 @@ export class MemoryManager {
    * Core memory içeriğini döner (system prompt için).
    */
   getCoreMemory(): string {
-    return readCoreMemory();
+    return readCoreMemory(this.role);
   }
 
   /**
    * soul.md içeriğini döner.
    */
   getSoul(): string {
-    return readSoul();
+    return readSoul(this.role);
   }
 
   /**
