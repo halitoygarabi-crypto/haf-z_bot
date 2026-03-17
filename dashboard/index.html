@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a1a">
+  <title>🤖 Bot Komuta Merkezi</title>
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a1a;
+      --bg-secondary: #111128;
+      --bg-card: rgba(20, 20, 50, 0.6);
+      --bg-glass: rgba(255, 255, 255, 0.03);
+      --border-glass: rgba(255, 255, 255, 0.08);
+      --text-primary: #e8e8f0;
+      --text-secondary: #8888aa;
+      --text-muted: #555577;
+      --accent-blue: #4f8cff;
+      --accent-purple: #a855f7;
+      --accent-green: #22c55e;
+      --accent-orange: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-cyan: #06b6d4;
+      --gradient-1: linear-gradient(135deg, #4f8cff, #a855f7);
+      --gradient-2: linear-gradient(135deg, #22c55e, #06b6d4);
+      --gradient-3: linear-gradient(135deg, #f59e0b, #ef4444);
+      --shadow-glow: 0 0 30px rgba(79, 140, 255, 0.15);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Background Effects */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 20%, rgba(79, 140, 255, 0.06) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 80%, rgba(168, 85, 247, 0.04) 0%, transparent 50%);
+      z-index: -1;
+      animation: bgPulse 15s ease-in-out infinite alternate;
+    }
+
+    @keyframes bgPulse {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-3%, -3%) scale(1.05); }
+    }
+
+    /* Login Screen */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-primary);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-overlay.hidden {
+      display: none;
+    }
+
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 24px;
+      padding: 30px;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .login-title {
+      font-size: 24px;
+      font-weight: 800;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .login-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .login-input {
+      width: 100%;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      padding: 14px;
+      font-size: 16px;
+      text-align: center;
+      outline: none;
+      margin-bottom: 16px;
+      letter-spacing: 4px;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: var(--gradient-1);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #dashboardContent {
+      display: none;
+    }
+    #dashboardContent.visible {
+      display: block;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 16px 20px;
+      background: rgba(10, 10, 26, 0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-glass);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .header .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.85); }
+    }
+
+    .header-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .main {
+      padding: 16px;
+      padding-bottom: 100px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 12px 8px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:active {
+      transform: scale(0.96);
+    }
+
+    .stat-number {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .stat-card.pending .stat-number { color: var(--accent-orange); }
+    .stat-card.processing .stat-number { color: var(--accent-blue); }
+    .stat-card.completed .stat-number { color: var(--accent-green); }
+    .stat-card.failed .stat-number { color: var(--accent-red); }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-glass);
+    }
+
+    .bot-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .bot-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .bot-card:active {
+      transform: scale(0.97);
+    }
+
+    .bot-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+
+    .bot-card.hafiz::before { background: var(--gradient-1); }
+    .bot-card.polmark_ai::before { background: var(--gradient-2); }
+    .bot-card.sferif::before { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+    .bot-card.bozo::before { background: linear-gradient(135deg, #ec4899, #8b5cf6); }
+
+    .bot-emoji {
+      font-size: 28px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .bot-name {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .bot-role {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .bot-status-indicator {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .bot-status-indicator.offline {
+      background: var(--accent-red);
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+      animation: none;
+    }
+
+    .bot-task-count {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: flex;
+      gap: 10px;
+    }
+
+    .bot-task-count span {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 2px;
+    }
+
+    .filter-tabs::-webkit-scrollbar { display: none; }
+
+    .filter-tab {
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      border: 1px solid var(--border-glass);
+      background: var(--bg-glass);
+      color: var(--text-secondary);
+    }
+
+    .filter-tab.active {
+      background: var(--gradient-1);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 2px 12px rgba(79, 140, 255, 0.3);
+    }
+
+    .filter-tab:active {
+      transform: scale(0.95);
+    }
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .task-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      position: relative;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .task-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .task-bot-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .task-bot-badge.hafiz { background: rgba(79, 140, 255, 0.15); color: var(--accent-blue); }
+    .task-bot-badge.polmark_ai { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
+    .task-bot-badge.sferif { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+    .task-bot-badge.bozo { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
+    .task-bot-badge.avyna { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); }
+    .task-bot-badge.marketing { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+    .task-bot-badge.utus { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
+
+    .task-status {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .task-status.pending { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+    .task-status.processing { background: rgba(79, 140, 255, 0.15); color: var(--accent-blue); }
+    .task-status.completed { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); }
+    .task-status.failed { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+
+    .task-command {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      word-break: break-word;
+    }
+
+    .task-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .task-result {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-glass);
+      font-size: 12px;
+      color: var(--text-secondary);
+      max-height: 120px;
+      overflow-y: auto;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .task-result.show {
+      display: block;
+    }
+
+    .task-card.expanded .task-result {
+      display: block;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state-emoji {
+      font-size: 48px;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .empty-state-text {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--gradient-1);
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(79, 140, 255, 0.4);
+      transition: all 0.3s;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fab:active {
+      transform: scale(0.9);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-width: 480px;
+      max-height: 85vh;
+      padding: 24px 20px;
+      overflow-y: auto;
+      animation: slideUpModal 0.3s ease-out;
+    }
+
+    @keyframes slideUpModal {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--text-muted);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+
+    .modal h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-select, .form-textarea {
+      width: 100%;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-select:focus, .form-textarea:focus {
+      border-color: var(--accent-blue);
+    }
+
+    .form-textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-select option {
+      background: var(--bg-secondary);
+    }
+
+    .priority-select {
+      display: flex;
+      gap: 8px;
+    }
+
+    .priority-option {
+      flex: 1;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-glass);
+      text-align: center;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+      background: var(--bg-glass);
+      color: var(--text-secondary);
+    }
+
+    .priority-option.active {
+      border-color: var(--accent-blue);
+      background: rgba(79, 140, 255, 0.1);
+      color: var(--accent-blue);
+    }
+
+    .priority-option:active {
+      transform: scale(0.95);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: var(--gradient-1);
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+      margin-top: 8px;
+    }
+
+    .submit-btn:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .refresh-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 2px;
+      background: var(--gradient-1);
+      width: 0;
+      transition: width 0.3s;
+      z-index: 999;
+    }
+
+    .refresh-bar.loading {
+      animation: loadingBar 1.5s ease-in-out infinite;
+    }
+
+    @keyframes loadingBar {
+      0% { width: 0; }
+      50% { width: 70%; }
+      100% { width: 100%; }
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-glass);
+      color: var(--text-primary);
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 300;
+      transition: transform 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-card) 25%, rgba(255,255,255,0.05) 50%, var(--bg-card) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--radius-sm);
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Screen -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-title">🔒 Hoş Geldin</div>
+      <div class="login-subtitle">Komuta merkezine erişmek için şifreni gir.</div>
+      <input type="password" class="login-input" id="passInput" placeholder="••••" autofocus>
+      <button class="login-btn" onclick="checkLogin()">Giriş Yap</button>
+    </div>
+  </div>
+
+  <div id="dashboardContent">
+    <div class="refresh-bar" id="refreshBar"></div>
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-top">
+        <h1>🤖 Komuta Merkezi</h1>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--text-muted)" id="lastUpdate">--:--</span>
+          <div class="status-dot" id="connectionDot"></div>
+        </div>
+      </div>
+      <div class="header-sub">Polmark AI Bot Ekosistemi • <span id="serverTime">--</span></div>
+    </header>
+
+    <!-- Main -->
+    <main class="main">
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card pending">
+          <div class="stat-number" id="statPending">-</div>
+          <div class="stat-label">Bekleyen</div>
+        </div>
+        <div class="stat-card processing">
+          <div class="stat-number" id="statProcessing">-</div>
+          <div class="stat-label">İşleniyor</div>
+        </div>
+        <div class="stat-card completed">
+          <div class="stat-number" id="statCompleted">-</div>
+          <div class="stat-label">Tamamlandı</div>
+        </div>
+        <div class="stat-card failed">
+          <div class="stat-number" id="statFailed">-</div>
+          <div class="stat-label">Başarısız</div>
+        </div>
+      </div>
+
+      <!-- Bot Status -->
+      <div class="section-title">Bot Durumları</div>
+      <div class="bot-grid">
+        <div class="bot-card hafiz" onclick="filterByBot('hafiz')">
+          <div class="bot-status-indicator" id="status-hafiz"></div>
+          <span class="bot-emoji">🧠</span>
+          <div class="bot-name">Hafız</div>
+          <div class="bot-role">Komutan • Koordinatör</div>
+          <div class="bot-task-count" id="tasks-hafiz">
+            <span>📋 -</span>
+          </div>
+        </div>
+        <div class="bot-card polmark_ai" onclick="filterByBot('polmark_ai')">
+          <div class="bot-status-indicator" id="status-polmark_ai"></div>
+          <span class="bot-emoji">📊</span>
+          <div class="bot-name">Polmark AI</div>
+          <div class="bot-role">Pazarlama Stratejisti</div>
+          <div class="bot-task-count" id="tasks-polmark_ai">
+            <span>📋 -</span>
+          </div>
+        </div>
+        <div class="bot-card sferif" onclick="filterByBot('sferif')">
+          <div class="bot-status-indicator" id="status-sferif"></div>
+          <span class="bot-emoji">🔍</span>
+          <div class="bot-name">Sferif</div>
+          <div class="bot-role">Araştırmacı</div>
+          <div class="bot-task-count" id="tasks-sferif">
+            <span>📋 -</span>
+          </div>
+        </div>
+        <div class="bot-card bozo" onclick="filterByBot('bozo')">
+          <div class="bot-status-indicator" id="status-bozo"></div>
+          <span class="bot-emoji">🎭</span>
+          <div class="bot-name">Bozo</div>
+          <div class="bot-role">Yardımcı</div>
+          <div class="bot-task-count" id="tasks-bozo">
+            <span>📋 -</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter & Tasks -->
+      <div class="section-title">Görev Akışı</div>
+      <div class="filter-tabs" id="filterTabs">
+        <div class="filter-tab active" data-filter="all" onclick="setFilter('all')">Tümü</div>
+        <div class="filter-tab" data-filter="pending" onclick="setFilter('pending')">⏳ Bekleyen</div>
+        <div class="filter-tab" data-filter="processing" onclick="setFilter('processing')">⚡ İşleniyor</div>
+        <div class="filter-tab" data-filter="completed" onclick="setFilter('completed')">✅ Bitti</div>
+        <div class="filter-tab" data-filter="failed" onclick="setFilter('failed')">❌ Hata</div>
+      </div>
+
+      <div class="task-list" id="taskList">
+        <div class="empty-state">
+          <span class="empty-state-emoji">🔄</span>
+          <div class="empty-state-text">Yükleniyor...</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- FAB -->
+    <button class="fab" onclick="openModal()" title="Yeni Görev">+</button>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <h2>📋 Yeni Görev Ata</h2>
+
+        <div class="form-group">
+          <label class="form-label">Hedef Bot</label>
+          <select class="form-select" id="targetBot">
+            <option value="avyna">🤖 Avyna (Tasarım)</option>
+            <option value="marketing">📈 Pazarlama Botu</option>
+            <option value="utus">💼 Utus (CRM)</option>
+            <option value="sferif">🔍 Sferif (Araştırma)</option>
+            <option value="bozo">🎭 Bozo (Yardımcı)</option>
+            <option value="all">🌐 Tümü</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Görev Açıklaması</label>
+          <textarea class="form-textarea" id="taskCommand" placeholder="Botun ne yapmasını istiyorsun? Örn: İstanbul lüks mobilya trend raporu hazırla..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Öncelik</label>
+          <div class="priority-select">
+            <div class="priority-option" data-priority="low" onclick="setPriority('low')">🟢 Düşük</div>
+            <div class="priority-option active" data-priority="medium" onclick="setPriority('medium')">🟡 Normal</div>
+            <div class="priority-option" data-priority="high" onclick="setPriority('high')">🔴 Yüksek</div>
+          </div>
+        </div>
+
+        <button class="submit-btn" id="submitBtn" onclick="submitTask()">
+          🚀 Görevi Gönder
+        </button>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://fmcpztikisyauhbzbbvd.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtY3B6dGlraXN5YXVoYnpiYnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyODQ3OTksImV4cCI6MjA4Mzg2MDc5OX0.7FVQTVVQ8sSd5wv3Z7l3Zh3tXudJaTq7Ax3Gzk3W7S4';
+    const API = `${SUPABASE_URL}/rest/v1`;
+    const HEADERS = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    };
+
+    let allTasks = [];
+    let currentFilter = 'all';
+    let currentBotFilter = null;
+    let selectedPriority = 'medium';
+    let refreshInterval = null;
+
+    // LOGIN LOGIC
+    const CORRECT_PASS = 'hakan2026';
+    
+    function checkLogin() {
+      const input = document.getElementById('passInput').value;
+      if (input === CORRECT_PASS) {
+        localStorage.setItem('bot_auth', 'true');
+        showDashboard();
+      } else {
+        alert('Hatalı şifre!');
+        document.getElementById('passInput').value = '';
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('dashboardContent').classList.add('visible');
+      fetchTasks();
+      refreshInterval = setInterval(fetchTasks, 15000);
+    }
+
+    // Enter tuşu ile giriş
+    document.getElementById('passInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') checkLogin();
+    });
+
+    async function fetchTasks() {
+      const bar = document.getElementById('refreshBar');
+      if (!bar) return;
+      bar.classList.add('loading');
+
+      try {
+        const res = await fetch(`${API}/bot_directives?order=created_at.desc&limit=100`, { headers: HEADERS });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        allTasks = await res.json();
+        updateUI();
+        updateLastTime();
+        bar.classList.remove('loading');
+      } catch (err) {
+        console.error('Fetch error:', err);
+        bar.classList.remove('loading');
+        const dot = document.getElementById('connectionDot');
+        if (dot) dot.style.background = 'var(--accent-red)';
+      }
+    }
+
+    async function createTask(target, command, priority) {
+      const body = {
+        sender: 'hafiz',
+        target,
+        command,
+        payload: { priority },
+        status: 'pending'
+      };
+
+      const res = await fetch(`${API}/bot_directives`, {
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    }
+
+    function updateUI() {
+      updateStats();
+      updateBotCards();
+      renderTasks();
+    }
+
+    function updateStats() {
+      const counts = { pending: 0, processing: 0, completed: 0, failed: 0 };
+      allTasks.forEach(t => { if (counts[t.status] !== undefined) counts[t.status]++; });
+
+      document.getElementById('statPending').textContent = counts.pending;
+      document.getElementById('statProcessing').textContent = counts.processing;
+      document.getElementById('statCompleted').textContent = counts.completed;
+      document.getElementById('statFailed').textContent = counts.failed;
+    }
+
+    function updateBotCards() {
+      const bots = ['hafiz', 'polmark_ai', 'sferif', 'bozo'];
+      bots.forEach(bot => {
+        const targetNames = bot === 'hafiz' ? ['avyna', 'marketing', 'utus'] : [bot];
+        const botTasks = allTasks.filter(t => targetNames.includes(t.target) || t.sender === bot);
+        const pending = botTasks.filter(t => t.status === 'pending').length;
+        const completed = botTasks.filter(t => t.status === 'completed').length;
+
+        const el = document.getElementById(`tasks-${bot}`);
+        if (el) {
+          el.innerHTML = `<span>⏳ ${pending}</span><span>✅ ${completed}</span>`;
+        }
+      });
+    }
+
+    function renderTasks() {
+      const container = document.getElementById('taskList');
+      let filtered = allTasks;
+
+      if (currentFilter !== 'all') {
+        filtered = filtered.filter(t => t.status === currentFilter);
+      }
+
+      if (currentBotFilter) {
+        filtered = filtered.filter(t => t.target === currentBotFilter || t.sender === currentBotFilter);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-state-emoji">📭</span>
+            <div class="empty-state-text">Bu filtrede görev bulunmuyor</div>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(task => {
+        const time = new Date(task.created_at).toLocaleString('tr-TR', {
+          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+
+        const statusLabels = {
+          pending: '⏳ Bekliyor',
+          processing: '⚡ İşleniyor',
+          completed: '✅ Tamam',
+          failed: '❌ Hata'
+        };
+
+        const resultHtml = task.result
+          ? `<div class="task-result ${task.status === 'completed' || task.status === 'failed' ? 'show' : ''}">${escapeHtml(task.result).substring(0, 500)}</div>`
+          : '';
+
+        return `
+          <div class="task-card" onclick="this.classList.toggle('expanded')">
+            <div class="task-header">
+              <span class="task-bot-badge ${task.target}">${task.target.toUpperCase()}</span>
+              <span class="task-status ${task.status}">${statusLabels[task.status] || task.status}</span>
+            </div>
+            <div class="task-command">${escapeHtml(task.command)}</div>
+            <div class="task-meta">
+              <span>📤 ${task.sender}</span>
+              <span>🕐 ${time}</span>
+            </div>
+            ${resultHtml}
+          </div>`;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function updateLastTime() {
+      const now = new Date();
+      document.getElementById('lastUpdate').textContent = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('serverTime').textContent = now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+      document.getElementById('connectionDot').style.background = 'var(--accent-green)';
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      currentBotFilter = null;
+      document.querySelectorAll('.filter-tab').forEach(el => {
+        el.classList.toggle('active', el.dataset.filter === filter);
+      });
+      renderTasks();
+    }
+
+    function filterByBot(bot) {
+      currentBotFilter = currentBotFilter === bot ? null : bot;
+      currentFilter = 'all';
+      document.querySelectorAll('.filter-tab').forEach(el => {
+        el.classList.toggle('active', el.dataset.filter === 'all');
+      });
+      renderTasks();
+      showToast(`🤖 ${bot.toUpperCase()} görevleri filtreleniyor`);
+    }
+
+    function openModal() {
+      document.getElementById('modalOverlay').classList.add('show');
+    }
+
+    function closeModal(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('modalOverlay').classList.remove('show');
+    }
+
+    function setPriority(p) {
+      selectedPriority = p;
+      document.querySelectorAll('.priority-option').forEach(el => {
+        el.classList.toggle('active', el.dataset.priority === p);
+      });
+    }
+
+    async function submitTask() {
+      const target = document.getElementById('targetBot').value;
+      const command = document.getElementById('taskCommand').value.trim();
+      const btn = document.getElementById('submitBtn');
+
+      if (!command) {
+        showToast('⚠️ Görev açıklaması boş olamaz');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Gönderiliyor...';
+
+      try {
+        await createTask(target, command, selectedPriority);
+        showToast('✅ Görev başarıyla gönderildi!');
+        document.getElementById('taskCommand').value = '';
+        document.getElementById('modalOverlay').classList.remove('show');
+        await fetchTasks();
+      } catch (err) {
+        showToast('❌ Görev gönderilemedi: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🚀 Görevi Gönder';
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Eğer zaten giriş yapılmışsa direkt göster
+      if (localStorage.getItem('bot_auth') === 'true') {
+        showDashboard();
+      }
+    });
+
+    let touchStartY = 0;
+    document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; });
+    document.addEventListener('touchend', e => {
+      if (touchStartY < 100 && e.changedTouches[0].clientY - touchStartY > 80) {
+        if (localStorage.getItem('bot_auth') === 'true') {
+          fetchTasks();
+          showToast('🔄 Güncelleniyor...');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
