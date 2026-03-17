@@ -32,10 +32,15 @@ export class MissionControl {
 
     // Durumları 'processing' olarak güncelle
     const taskIds = tasks.map(t => t.id);
-    await supabase
+    const { error: updateError } = await supabase
       .from("bot_directives")
       .update({ status: "processing", updated_at: new Date().toISOString() })
       .in("id", taskIds);
+
+    if (updateError) {
+      console.error(`[MissionControl] Could not update tasks to processing for ${botName}:`, updateError);
+      return []; // Güncelleme başarısızsa işlem yapma
+    }
 
     return tasks.map(t => ({
       id: t.id,
